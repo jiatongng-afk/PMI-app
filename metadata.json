@@ -1,0 +1,6 @@
+{
+  "name": "SG AirWatch - Singapore PSI & Air Telemetry",
+  "description": "Live Singapore PSI and PM2.5 air quality monitoring with real-time unhealthy haze alerts and official health advisories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
