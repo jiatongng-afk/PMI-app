@@ -167,8 +167,31 @@ export async function fetchLiveSingaporePsi(scenario: SimulationScenarioKey = 'l
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
 
+    // Primary: Call the serverless /api/psi endpoint
+    try {
+      const serverlessRes = await fetch('/api/psi', {
+        signal: controller.signal,
+        headers: { Accept: 'application/json' },
+      });
+      if (serverlessRes.ok) {
+        clearTimeout(timeoutId);
+        const serverlessJson = await serverlessRes.json();
+        if (serverlessJson && serverlessJson.readings) {
+          return {
+            timestamp: serverlessJson.timestamp || new Date().toISOString(),
+            updateTimestamp: serverlessJson.updatedTimestamp || serverlessJson.timestamp || new Date().toISOString(),
+            source: 'nea_live',
+            readings: serverlessJson.readings,
+            status: 'Live (api-open.data.gov.sg)',
+          };
+        }
+      }
+    } catch {
+      // Fallback to direct client-side fetch if serverless endpoint is unreachable
+    }
+
     const [psiRes, pm25Res] = await Promise.allSettled([
-      fetch('https://api.data.gov.sg/v1/environment/psi', {
+      fetch('https://api-open.data.gov.sg/v2/real-time/api/psi', {
         signal: controller.signal,
         headers: { Accept: 'application/json' },
       }),
@@ -182,7 +205,7 @@ export async function fetchLiveSingaporePsi(scenario: SimulationScenarioKey = 'l
 
     if (psiRes.status === 'fulfilled' && psiRes.value.ok) {
       const psiJson = await psiRes.value.json();
-      const latestItem = psiJson.items?.[0];
+      const latestItem = psiJson.data?.items?.[0] || psiJson.items?.[0];
 
       if (latestItem && latestItem.readings) {
         const rawReadings = latestItem.readings;
